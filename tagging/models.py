@@ -10,6 +10,7 @@ except NameError:
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection, models
+from django.db.utils import IntegrityError
 from django.db.models.query import QuerySet
 from django.utils.translation import ugettext_lazy as _
 
@@ -47,7 +48,14 @@ class TagManager(models.Manager):
         for tag_name in updated_tag_names:
             if tag_name not in current_tag_names:
                 tag, created = self.get_or_create(name=tag_name)
-                TaggedItem._default_manager.create(tag=tag, object=obj)
+
+                try:
+                    TaggedItem._default_manager.create(tag=tag, object=obj)
+                except IntegrityError:
+                    TaggedItem._default_manager.filter(
+                        tag=tag,
+                        object_id=obj.id
+                    ).update(**{'tag': tag, 'object_id': obj.id})
 
     def add_tag(self, obj, tag_name):
         """
