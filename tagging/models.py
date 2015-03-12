@@ -52,7 +52,10 @@ class TagManager(models.Manager):
                 try:
                     TaggedItem._default_manager.create(tag=tag, object=obj)
                 except IntegrityError:
-                    pass
+                    TaggedItem._default_manager.filter(
+                        tag=tag,
+                        object_id=obj.id
+                    ).update(**{'tag': tag, 'object_id': obj.id})
 
     def add_tag(self, obj, tag_name):
         """
